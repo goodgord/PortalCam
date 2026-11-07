@@ -39,6 +39,20 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("audio", true)
         set(v) = prefs.edit().putBoolean("audio", v).apply()
 
+    /** TCP port the PC sends speaker audio to. */
+    var speakerPort: Int
+        get() = prefs.getInt("speakerPort", 8081)
+        set(v) = prefs.edit().putInt("speakerPort", v).apply()
+
+    /** UDP port for the discovery beacon. */
+    var beaconPort: Int
+        get() = prefs.getInt("beaconPort", 18475)
+        set(v) = prefs.edit().putInt("beaconPort", v).apply()
+
+    var startOnBoot: Boolean
+        get() = prefs.getBoolean("startOnBoot", true)
+        set(v) = prefs.edit().putBoolean("startOnBoot", v).apply()
+
     var port: Int
         get() = prefs.getInt("port", 8080)
         set(v) = prefs.edit().putInt("port", v).apply()

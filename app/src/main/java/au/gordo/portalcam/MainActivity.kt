@@ -133,7 +133,9 @@ class MainActivity : Activity() {
                 append("USB: adb forward tcp:${settings.port} tcp:${settings.port}  then  http://127.0.0.1:${settings.port}/stream\n")
                 append("${FrameStore.width}x${FrameStore.height}  ${"%.0f".format(FrameStore.fps)} fps  ${FrameStore.clients.get()} viewer(s)  rot ${CamService.effectiveRotation}°\n")
                 val bars = (AudioCapture.level * 20).toInt().coerceIn(0, 20)
-                append("Mic ${AudioCapture.state}  [" + "#".repeat(bars) + " ".repeat(20 - bars) + "]  ${AudioCapture.listeners} listener(s)  /audio.wav")
+                append("Mic ${AudioCapture.state}  [" + "#".repeat(bars) + " ".repeat(20 - bars) + "]  ${AudioCapture.listeners} listener(s)  /audio.wav\n")
+                val sbars = (SpeakerServer.level * 20).toInt().coerceIn(0, 20)
+                append("Speaker ${SpeakerServer.state}  [" + "#".repeat(sbars) + " ".repeat(20 - sbars) + "]  port ${settings.speakerPort}")
             }
             status.text = lines
             btnToggle.text = if (CamService.running) "Stop" else "Start"

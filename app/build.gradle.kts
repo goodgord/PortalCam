@@ -12,8 +12,8 @@ android {
         // Meta advises minSdk 28 and targetSdk 29 for Portal. The Portal runs Android 10 (SDK 29).
         minSdk = 28
         targetSdk = 29
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -24,6 +24,7 @@ android {
         }
     }
     lint { checkReleaseBuilds = false }
+    buildFeatures { buildConfig = true }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

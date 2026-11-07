@@ -1,0 +1,69 @@
+name: Windows build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The virtual camera is softcam (MIT, github.com/tshino/softcam), built here with the device renamed.
+      - name: Fetch softcam
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/tshino/softcam softcam
+          cd softcam
+          git log -1 --format='softcam commit %H' | tee ../softcam-commit.txt
+          sed -i 's/DirectShow Softcam/PortalCam Camera/g' src/softcam/softcam.cpp src/softcamcore/DShowSoftcam.cpp
+          grep -rn "PortalCam Camera" src/softcam/softcam.cpp src/softcamcore/DShowSoftcam.cpp
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build softcam.dll and softcam_installer.exe
+        shell: pwsh
+        run: |
+          msbuild softcam\softcam.sln "-t:BaseClasses;softcamcore;softcam" -p:Configuration=Release -p:Platform=x64 -m -v:minimal
+          msbuild softcam\examples\softcam_installer\softcam_installer.sln -p:Configuration=Release -p:Platform=x64 -m -v:minimal
+          Get-ChildItem -Recurse softcam -Include softcam.dll, softcam_installer.exe | Select-Object FullName, Length
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Publish PortalCam.exe
+        shell: pwsh
+        run: dotnet publish windows-app\PortalCam\PortalCam.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
+
+      - name: Assemble package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist\PortalCam | Out-Null
+          Copy-Item publish\PortalCam.exe dist\PortalCam\
+          Copy-Item (Get-ChildItem -Recurse softcam\x64\Release\softcam.dll | Select-Object -First 1).FullName dist\PortalCam\
+          Copy-Item (Get-ChildItem -Recurse softcam\examples\softcam_installer\x64\Release\softcam_installer.exe | Select-Object -First 1).FullName dist\PortalCam\
+          Copy-Item windows-app\setup\* dist\PortalCam\
+          Copy-Item softcam\LICENSE dist\PortalCam\LICENSE-softcam.txt
+          Copy-Item softcam-commit.txt dist\PortalCam\
+          Copy-Item LICENSE dist\PortalCam\LICENSE.txt
+          Copy-Item release\*.apk dist\PortalCam\
+          Compress-Archive -Path dist\PortalCam -DestinationPath PortalCam-windows.zip
+          Get-ChildItem dist\PortalCam
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PortalCam-windows
+          path: PortalCam-windows.zip
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" PortalCam-windows.zip release/*.apk --title "PortalCam ${GITHUB_REF_NAME}" --notes "Windows app and Portal APK. See README.md for setup." || gh release upload "${GITHUB_REF_NAME}" PortalCam-windows.zip release/*.apk --clobber

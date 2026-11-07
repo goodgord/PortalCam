@@ -6,9 +6,16 @@ Meta ended support for Portal devices, but the hardware has a good wide-angle ca
 This project puts them to use for video calls on a computer that has no webcam. It was written over a weekend for a
 job interview; it is small, has no dependencies beyond the Android framework, and is easy to change.
 
-An Android app runs on the Portal, opens the front camera and microphone, and serves them over HTTP on port 8080:
-video as a Motion JPEG stream, audio as a live WAV stream. On the PC, OBS Studio reads both. It exposes the video to
-Windows as "OBS Virtual Camera" and plays the audio into VB-Audio Virtual Cable, which Windows sees as a microphone.
+Two programs:
+
+- **On the Portal**, an Android app opens the front camera and microphone and serves them over the network: video as
+  Motion JPEG, microphone as a live WAV stream. It also plays audio the PC sends it, so the Portal is the call's
+  speaker, and it announces itself on the network so nothing has to be typed. It starts at boot.
+- **On the PC**, a tray program finds the Portal (Wi-Fi or USB), shows its picture as a virtual camera called
+  "PortalCam Camera", plays its microphone into a virtual audio cable that apps see as a microphone, and sends the
+  PC's sound to the Portal through a second virtual cable that apps see as a speaker.
+
+After a one-time setup, using it is: turn the Portal on, open Teams.
 
 Tested on a Portal (`omni`, Android 10, SDK 29): 1280x720 at 28 to 30 frames per second, about 16 Mbit/s over
 Wi-Fi at JPEG quality 75, plus 0.8 Mbit/s of audio.
@@ -16,8 +23,11 @@ Wi-Fi at JPEG quality 75, plus 0.8 Mbit/s of audio.
 ## Folders
 
 - `app/` the Android app. Kotlin, Camera2, no library dependencies.
-- `release/PortalCam-0.1.0.apk` the built app, debug-signed, ready to install.
-- `windows/` instructions for the PC, a ready-made OBS scene collection and a USB fallback script.
+- `release/PortalCam-0.2.0.apk` the built Portal app, debug-signed, ready to install.
+- `windows-app/` the Windows tray program (C#, .NET 9, NAudio) and the one-time setup script. The virtual camera
+  is softcam (MIT), built from source by the GitHub Actions workflow and renamed "PortalCam Camera".
+- `windows/README.md` the guide for the PC.
+- `.github/workflows/windows.yml` builds `PortalCam-windows.zip` on a Windows runner and attaches it to a release.
 
 ## Install on the Portal
 
@@ -55,15 +65,22 @@ Endpoints on port 8080:
 | `/stream` | `multipart/x-mixed-replace` MJPEG, for OBS, ffmpeg or a browser |
 | `/snapshot.jpg` | The latest frame |
 | `/audio.wav` | The microphone as a live 48 kHz 16-bit mono WAV stream |
-| `/status` | JSON: width, height, fps, clients, mic state, mic level, mic listeners |
+| `/volume?percent=NN` | Sets the Portal's call volume; without a query, reads it |
+| `/status` | JSON: picture size, fps, clients, mic and speaker state and levels, volume |
 
-PC side: see `windows/README.md`. The same approach works on a Mac or Linux PC with OBS Studio: OBS Virtual Camera
-is built in on all three, and the microphone goes through a virtual audio device (BlackHole on macOS, a PulseAudio or
-PipeWire null sink on Linux).
+Other ports: TCP 8081 takes speaker audio (one header line `PCM <rate> <channels> 16`, then raw 16-bit PCM).
+UDP 18475 carries a JSON beacon once a second and answers a `PORTALCAM?` probe.
+
+PC side: see `windows/README.md`. On a Mac or Linux PC the streams can be used through OBS Studio (OBS Virtual
+Camera plus a virtual audio device such as BlackHole or a PipeWire null sink); there is no native app for those yet.
 
 ## Build
 
-Needs the Android SDK and JDK 17. `local.properties` must contain `sdk.dir=<path to the SDK>`.
+Windows program: `dotnet publish windows-app/PortalCam/PortalCam.csproj -c Release -r win-x64` builds the exe on
+any OS with the .NET 9 SDK. `softcam.dll` needs Visual Studio's C++ tools, which is why the GitHub Actions workflow
+does the full package. `windows-app/PortalCam.Probe` is a console check of the network side that runs anywhere.
+
+Portal app: needs the Android SDK and JDK 17. `local.properties` must contain `sdk.dir=<path to the SDK>`.
 
 ```
 ./gradlew assembleRelease
@@ -91,8 +108,11 @@ following the Camera2 formula for a front camera. Standing the Portal the other 
 - Video and audio are separate streams with no shared clock. OBS plays them with similar delay, and the Sync Offset
   on the audio source corrects any drift you notice.
 - The Portal's own assistant software holds camera 1 most of the time. Camera 0 works; the Camera button switches.
-- The Windows guide was written from OBS and VB-Cable documentation and has not yet been run through on a Windows PC.
-  Corrections are welcome.
+- The Windows program was written and compiled without a Windows PC to hand. The network side was tested against a
+  real Portal; the virtual camera and audio cable parts follow their documentation and need a first run on Windows.
+- New Teams has had periods of not listing DirectShow virtual cameras (the kind softcam is). Zoom, Meet and browsers
+  list them. If Teams does not show "PortalCam Camera", quit Teams fully and reopen it; if it still does not, use
+  the browser version of Teams for the call.
 
 ## Licence
 

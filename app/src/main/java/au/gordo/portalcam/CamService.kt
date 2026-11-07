@@ -63,6 +63,8 @@ class CamService : Service() {
     private var session: CameraCaptureSession? = null
     private var reader: ImageReader? = null
     private var server: MjpegServer? = null
+    private var speaker: SpeakerServer? = null
+    private var beacon: Beacon? = null
     private var wakeLock: PowerManager.WakeLock? = null
 
     // Reusable buffers for the frame pipeline.
@@ -143,7 +145,7 @@ class CamService : Service() {
         cameraHandler = Handler(thread.looper)
 
         try {
-            server = MjpegServer(settings.port, settings.maxFps).also { it.start() }
+            server = MjpegServer(settings.port, settings.maxFps, this).also { it.start() }
         } catch (e: IOException) {
             setState("Cannot listen on port ${settings.port}: ${e.message}")
             return
@@ -152,6 +154,10 @@ class CamService : Service() {
             if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) AudioCapture.start()
             else AudioCapture.state = "no permission"
         }
+        try { speaker = SpeakerServer(this, settings.speakerPort).also { it.start() } }
+        catch (e: IOException) { Log.w(TAG, "speaker port ${settings.speakerPort}: $e"); SpeakerServer.state = "port busy" }
+        try { beacon = Beacon(settings.beaconPort, settings.port, settings.speakerPort, android.os.Build.MODEL).also { it.start() } }
+        catch (e: Exception) { Log.w(TAG, "beacon: $e") }
         openCamera()
     }
 
@@ -160,6 +166,8 @@ class CamService : Service() {
         AudioCapture.stop()
         closeCamera()
         server?.stop(); server = null
+        speaker?.stop(); speaker = null
+        beacon?.stop(); beacon = null
         cameraThread?.quitSafely(); cameraThread = null; cameraHandler = null
         wakeLock?.let { if (it.isHeld) it.release() }; wakeLock = null
         FrameStore.reset()

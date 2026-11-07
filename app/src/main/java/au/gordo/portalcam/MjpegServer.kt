@@ -20,8 +20,9 @@ import kotlin.concurrent.thread
  *   /snapshot.jpg the latest frame
  *   /status      a line of JSON with resolution, fps and client count
  *   /audio.wav   the microphone as a live 48 kHz 16-bit mono WAV stream
+ *   /volume      GET ?percent=NN sets the Portal's call volume; without a query it reads it
  */
-class MjpegServer(private val port: Int, private val maxFps: Int) {
+class MjpegServer(private val port: Int, private val maxFps: Int, private val context: android.content.Context? = null) {
     private val tag = "PortalCam.Http"
     @Volatile private var server: ServerSocket? = null
     @Volatile private var running = false
@@ -55,7 +56,9 @@ class MjpegServer(private val port: Int, private val maxFps: Int) {
             val requestLine = reader.readLine() ?: return
             // Drain headers.
             while (true) { val line = reader.readLine(); if (line.isNullOrEmpty()) break }
-            val path = requestLine.split(" ").getOrNull(1)?.substringBefore('?') ?: "/"
+            val target = requestLine.split(" ").getOrNull(1) ?: "/"
+            val path = target.substringBefore('?')
+            val query = target.substringAfter('?', "")
             val out = socket.getOutputStream()
             socket.soTimeout = 0
             when (path) {
@@ -63,6 +66,7 @@ class MjpegServer(private val port: Int, private val maxFps: Int) {
                 "/snapshot.jpg", "/snapshot", "/frame.jpg" -> snapshot(out)
                 "/status", "/status.json" -> status(out)
                 "/audio.wav", "/audio" -> audio(out)
+                "/volume" -> volume(out, query)
                 "/" , "/index.html" -> page(out)
                 else -> text(out, "404 Not Found", "text/plain", "Not found\n")
             }
@@ -104,7 +108,7 @@ class MjpegServer(private val port: Int, private val maxFps: Int) {
     }
 
     private fun status(out: OutputStream) {
-        val json = """{"width":${FrameStore.width},"height":${FrameStore.height},"fps":${"%.1f".format(FrameStore.fps)},"clients":${FrameStore.clients.get()},"mic":"${AudioCapture.state}","micLevel":${"%.2f".format(AudioCapture.level)},"micListeners":${AudioCapture.listeners}}""" + "\n"
+        val json = """{"width":${FrameStore.width},"height":${FrameStore.height},"fps":${"%.1f".format(FrameStore.fps)},"clients":${FrameStore.clients.get()},"mic":"${AudioCapture.state}","micLevel":${"%.2f".format(AudioCapture.level)},"micListeners":${AudioCapture.listeners},"speaker":"${SpeakerServer.state}","speakerLevel":${"%.2f".format(SpeakerServer.level)},"volume":${volumePercent()}}""" + "\n"
         text(out, "200 OK", "application/json", json)
     }
 
@@ -119,6 +123,27 @@ class MjpegServer(private val port: Int, private val maxFps: Int) {
             </body></html>
         """.trimIndent()
         text(out, "200 OK", "text/html; charset=utf-8", html)
+    }
+
+    private fun audioManager() = context?.getSystemService(android.content.Context.AUDIO_SERVICE) as? android.media.AudioManager
+
+    private fun volumePercent(): Int {
+        val am = audioManager() ?: return -1
+        val stream = android.media.AudioManager.STREAM_VOICE_CALL
+        val max = am.getStreamMaxVolume(stream).coerceAtLeast(1)
+        return am.getStreamVolume(stream) * 100 / max
+    }
+
+    /** GET /volume?percent=NN sets the call volume on the Portal's speaker; GET /volume reads it. */
+    private fun volume(out: OutputStream, query: String) {
+        val am = audioManager()
+        val pct = query.split("&").firstOrNull { it.startsWith("percent=") }?.substringAfter("=")?.toIntOrNull()
+        if (am != null && pct != null) {
+            val stream = android.media.AudioManager.STREAM_VOICE_CALL
+            val max = am.getStreamMaxVolume(stream)
+            am.setStreamVolume(stream, (pct.coerceIn(0, 100) * max + 50) / 100, 0)
+        }
+        text(out, "200 OK", "application/json", """{"volume":${volumePercent()}}""" + "\n")
     }
 
     private fun audio(out: OutputStream) {

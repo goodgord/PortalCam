@@ -1,98 +1,73 @@
-# Using the Portal as a webcam and microphone on Windows
+# PortalCam on Windows
 
-The Portal app serves its camera as a Motion JPEG video stream and its microphone as a WAV audio stream over the
-network. Windows does not treat a network stream as a webcam or a microphone by itself, so two free programs sit in
-the middle:
+PortalCam for Windows is a small program that lives in the tray by the clock. It finds the Portal on its own, over
+Wi-Fi or a USB cable, and gives Windows three devices:
 
-- OBS Studio reads both streams. It presents the video to Windows as "OBS Virtual Camera".
-- VB-Audio Virtual Cable is a virtual audio device. OBS plays the Portal's microphone into it, and Windows apps
-  see it as a microphone called "CABLE Output".
+- a camera called "PortalCam Camera", showing the Portal's picture
+- a microphone, the Portal's microphone
+- a speaker, which plays through the Portal
 
-Zoom, Teams, Google Meet and browsers all list those two devices like an ordinary webcam and microphone.
+Day to day there is nothing to do. The Portal starts streaming when it powers on, PortalCam starts with Windows and
+connects within a few seconds, and Teams or Zoom use the devices like any webcam, mic and speaker. Because the call's
+sound comes out of the Portal, the Portal's own echo cancelling removes it from the microphone, so no headphones are
+needed.
 
-## One-time setup (about 10 minutes)
+## One-time setup (about 10 minutes, once, by whoever is comfortable with installers)
 
-1. On the Portal, open the PortalCam app. The top-left box shows a line like `http://192.168.86.50:8080/stream`.
-   Write that address down. The Portal and the PC must be on the same Wi-Fi network.
-2. On the PC, open a browser and go to the address but without `/stream` on the end, for example
-   `http://192.168.86.50:8080/`. You should see the live picture. If you do not, see "If it does not work" below.
-3. Install OBS Studio from https://obsproject.com/download (Windows installer, free). Skip the auto-configuration
-   wizard when it first opens (choose Cancel).
-4. In OBS, go to Scene Collection → Import, click the "..." under Collection Path, choose `PortalCam-OBS-Scene.json`
-   from this folder, and click Import. Then go to Scene Collection → PortalCam.
-5. In the Sources list, double-click "Portal Camera". Check that the Input field matches the address from step 1
-   (with `/stream` on the end). Change it if the Portal's address is different. Click OK.
-   The picture should appear in the OBS preview.
-6. In the Controls panel at the bottom right, click "Start Virtual Camera".
-7. In Zoom, Teams or the browser, choose "OBS Virtual Camera" as the camera.
+Windows cannot create a camera or an audio device from a normal program; each needs a small driver. PortalCam uses
+two free ones from VB-Audio for the sound, and an MIT-licensed virtual camera (softcam) for the picture. The setup
+script installs all three.
 
-Then the microphone:
-
-8. Install VB-Audio Virtual Cable from https://vb-audio.com/Cable/ (VBCABLE_Driver_Pack, free). Run the
-   installer as administrator and restart the PC when it asks.
-9. In OBS, go to Settings → Audio → Advanced → Monitoring Device, choose "CABLE Input (VB-Audio Virtual Cable)",
-   and click OK.
-10. In the Sources list there is a second source, "Portal Mic". Double-click it and check its Input is the Portal's
-    address with `/audio.wav` on the end, for example `http://192.168.86.50:8080/audio.wav`. Click OK.
-11. In the Audio Mixer panel, click the gear icon next to "Portal Mic" → Advanced Audio Properties. Set its Audio
-    Monitoring to "Monitor Only (mute output)". Close the window. The Portal Mic level bar should move when you
-    talk near the Portal.
-12. In Zoom, Teams or the browser, choose "CABLE Output (VB-Audio Virtual Cable)" as the microphone.
-13. Plug headphones or earbuds into the PC and use them for the call. The Portal's microphone will otherwise hear the
-    interviewer from the PC speakers and send their voice back to them as an echo.
-
-If the import in step 4 did not include "Portal Mic", add it by hand: Sources → "+" → Media Source → name it
-"Portal Mic" → untick "Local File" → Input: the `/audio.wav` address → Input Format: `wav` → Network Buffering: 0 MB
-→ tick "Restart playback when source becomes active" → OK. Then do steps 11 and 12.
-
-If the import in step 4 does not work, make the source by hand: Sources → "+" → Media Source → name it
-"Portal Camera" → untick "Local File" → Input: the stream address → Input Format: `mjpeg` → Network Buffering: 0 MB
-→ tick "Restart playback when source becomes active" → OK.
+1. Download `PortalCam-windows.zip` from the Releases page of this repository and unzip it anywhere.
+2. Double-click `Setup-PortalCam.bat` and accept the administrator prompt.
+3. Two VB-Audio installer windows will appear, one after the other. In each, click "Install Driver", accept the
+   Windows security prompt, then close the window. The script carries on by itself.
+4. When the script says "Done", PortalCam is running in the tray and set to start with Windows.
+5. Open Teams. Settings → Devices should show Camera "PortalCam Camera", Microphone "CABLE Output (VB-Audio Virtual
+   Cable)" and Speaker "Hi-Fi Cable Input (VB-Audio Hi-Fi Cable)". The script has already made the last two the
+   Windows defaults, so Teams normally picks them without being asked. If Teams was open during setup, quit it fully
+   first (right-click its tray icon → Quit) and open it again.
+6. Make a test call. Teams has "Make a test call" under Settings → Devices.
 
 ## On the day
 
-1. Turn the Portal on, make sure its privacy switch is not covering the camera, and open PortalCam. Wait for the
-   top-left box to say "Streaming".
-2. Open OBS and click "Start Virtual Camera". OBS remembers the scene and source.
-3. Join the call and pick "OBS Virtual Camera" as the camera and "CABLE Output" as the microphone. Put the
-   headphones on.
-4. Do a test call first (Zoom has "Test video" and "Test mic" in Settings) to check framing, lighting and that your
-   voice is heard. If your voice arrives noticeably after your lips move, open Advanced Audio Properties in OBS and
-   adjust the Sync Offset on "Portal Mic" (a negative value plays the sound earlier).
+1. Make sure the Portal is on and its camera privacy switch is not covering the lens. The Portal starts
+   streaming on its own. (If it shows another app, that is fine; the stream runs in the background.)
+2. Check the PortalCam tray icon is green. Hover over it to read its state. Grey means it is still looking for the
+   Portal.
+3. Join the call.
 
-The Portal's screen shows exactly what the PC receives. Use the buttons along the bottom of the Portal screen:
+## The tray menu
 
-- Rotate: turns the picture by 90 degrees each press, if it comes out sideways or upside down.
-- Mirror: flips left and right. Most calling apps mirror your own preview but send the unmirrored picture, so leave
-  this off unless text in shot looks wrong on the far end.
-- Camera 0 / Camera 1: the Portal has two camera devices. Use whichever gives the better picture.
-- 360p / 720p / 1080p: picture size. 720p is right for a video call.
-- Q 50 to Q 95: JPEG quality. Higher is sharper but uses more Wi-Fi bandwidth. 75 is a good default.
-- Mic: on / off: whether the microphone stream is served. The level bar in the top-left box moves when the Portal
-  hears something.
+Right-click the PortalCam icon:
 
-## If the audio chain is too much trouble
+- The first lines show the state, the frame rate, and whether the microphone and speaker paths are running.
+- Portal speaker volume: 40 to 100 percent.
+- Use the Portal as the default speaker and microphone: run this again if another device took over the defaults.
+- Open the Portal's picture in a browser: a quick check of what the camera sees.
+- Start with Windows.
+- Open log file: for troubleshooting.
 
-A wired headset with a 3.5 mm plug or a USB headset plugged into the PC is a microphone and headphones in one. It
-needs no setup and has no echo. If one is to hand, use it and skip steps 8 to 12.
+## If something is wrong
 
-## If it does not work
+- Icon stays grey: the PC and the Portal are on different networks, or the Portal's app is not running. Open the
+  PortalCam app on the Portal and check it says "Streaming". If the PC is on Ethernet and the Portal on a guest
+  Wi-Fi, move one of them. Or plug the Portal into the PC with a USB cable, tap "Allow" on the Portal when it asks
+  about USB debugging, and PortalCam switches to USB on its own.
+- No camera in Teams: quit Teams fully and open it again. Check Windows Settings → Privacy → Camera allows desktop
+  apps. If "PortalCam Camera" is still missing, run `Setup-PortalCam.bat` again.
+- Teams shows the camera but a dark picture: the Portal connected after Teams opened and Teams kept the old frame.
+  Switch to another camera and back in Teams' device settings.
+- They cannot hear you: in Teams' device settings, check the microphone is "CABLE Output". On the Portal screen
+  the "Mic" level bar should move when you talk.
+- You cannot hear them: check the Teams speaker is "Hi-Fi Cable Input", and raise the Portal speaker volume from the
+  tray menu. On the Portal screen the "Speaker" line should say "playing".
+- Your voice reaches them late or echoing: that is the chain's delay. The Portal's echo cancelling handles its own
+  speaker; if echo persists, lower the Portal volume a step.
 
-- The browser test in step 2 shows nothing: the PC and the Portal are probably on different networks (for example
-  the PC on Ethernet and the Portal on a guest Wi-Fi), or Windows Firewall is blocking the browser. Try the
-  address on a phone on the same Wi-Fi to tell which. If the networks cannot be made the same, use USB instead:
-  install Android platform-tools, plug the Portal into the PC with a USB cable, accept the "Allow USB debugging"
-  prompt on the Portal, run `usb-forward.bat`, and use `http://127.0.0.1:8080/stream` as the address in OBS.
-- OBS shows a black picture: double-click the Portal Camera source and untick then re-tick "Restart playback when
-  source becomes active", or check the address.
-- The picture freezes: the Portal's Wi-Fi dropped or it went to sleep. Tap the Portal screen, check the top-left box
-  says "Streaming", then in OBS right-click the source → Restart.
-- The Portal says "Camera taken by another app, retrying": the Portal's own camera software has the camera. Wait a
-  few seconds, it retries on its own. If it never recovers, press Camera 0 / Camera 1 to try the other device.
-- The Portal Mic level bar in OBS does not move: check the Portal screen says "Mic on". If it says "no permission",
-  open the Portal's Settings → Apps → PortalCam → Permissions and allow Microphone, then press Stop and Start in
-  PortalCam. Also check that OBS's Monitoring Device is "CABLE Input" and the source is set to "Monitor Only".
-- "CABLE Output" is missing from the microphone list: VB-Cable did not finish installing. Run its installer as
-  administrator again and restart the PC.
-- "OBS Virtual Camera" is missing from the camera list in Zoom or Teams: restart that app after OBS has started the
-  virtual camera. In the browser, reload the page.
+## If the setup script cannot be used
+
+The pieces can be installed by hand: VB-CABLE and Hi-Fi Cable from https://vb-audio.com/Cable/, then run
+`softcam_installer.exe register <full path>\softcam.dll` as administrator, then start `PortalCam.exe` and tick
+"Start with Windows" in its menu. The folder also has `usb-forward.bat` and the OBS scene from the first version of
+this project, in case a manual OBS route is preferred.
