@@ -80,6 +80,10 @@ class CamService : Service() {
     private var mirror = false
     private var quality = 75
     private var retryCount = 0
+    private var lastBringToFront = 0L
+    /** Bumped on every open attempt. Callbacks from an older attempt are ignored, so two opens never overlap. */
+    private var openGeneration = 0
+    private val retryRunnable = Runnable { openCamera() }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -163,6 +167,8 @@ class CamService : Service() {
 
     private fun stopEverything() {
         running = false
+        cameraHandler?.removeCallbacks(retryRunnable)
+        openGeneration++
         AudioCapture.stop()
         closeCamera()
         server?.stop(); server = null
@@ -207,6 +213,8 @@ class CamService : Service() {
     private fun openCamera() {
         if (!running) return
         val handler = cameraHandler ?: return
+        if (camera != null) return
+        val gen = ++openGeneration
         setState("Opening camera $cameraId")
         try {
             val chars = cameraManager.getCameraCharacteristics(cameraId)
@@ -218,22 +226,37 @@ class CamService : Service() {
             val fpsRange = chooseFpsRange(chars)
             cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
                 override fun onOpened(device: CameraDevice) {
+                    if (gen != openGeneration || !running) { device.close(); return }
                     camera = device
                     retryCount = 0
                     createSession(device, r, fpsRange)
                 }
                 override fun onDisconnected(device: CameraDevice) {
-                    Log.w(TAG, "Camera disconnected (another app took it). Retrying.")
-                    device.close(); camera = null
+                    device.close()
+                    if (gen != openGeneration) return
+                    camera = null
                     scheduleRetry("Camera taken by another app, retrying")
                 }
                 override fun onError(device: CameraDevice, error: Int) {
-                    device.close(); camera = null
+                    device.close()
+                    if (gen != openGeneration) return
+                    camera = null
                     scheduleRetry("Camera error $error, retrying")
                 }
             }, handler)
         } catch (e: CameraAccessException) {
-            scheduleRetry("Camera access failed: ${e.message}")
+            if (e.message?.contains("from background") == true) {
+                // Android 10 opens the camera only for the app on screen. Bring our screen back, if allowed.
+                val now = System.currentTimeMillis()
+                if (android.provider.Settings.canDrawOverlays(this) && now - lastBringToFront > 20_000) {
+                    lastBringToFront = now
+                    Log.i(TAG, "Camera blocked in background; bringing PortalCam to the front")
+                    startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    scheduleRetry("Bringing PortalCam to the front for the camera")
+                } else {
+                    scheduleRetry("Camera needs PortalCam on the Portal's screen. Tap PortalCam on the Portal.")
+                }
+            } else scheduleRetry("Camera access failed: ${e.message}")
         } catch (e: SecurityException) {
             setState("Camera permission missing")
         } catch (e: Exception) {
@@ -282,7 +305,9 @@ class CamService : Service() {
         closeCamera(keepReader = false)
         retryCount++
         val delay = (1000L * minOf(retryCount, 5))
-        cameraHandler?.postDelayed({ openCamera() }, delay)
+        // One pending retry at a time.
+        cameraHandler?.removeCallbacks(retryRunnable)
+        cameraHandler?.postDelayed(retryRunnable, delay)
     }
 
     private fun closeCamera(keepReader: Boolean = false) {

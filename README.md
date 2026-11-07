@@ -38,10 +38,14 @@ are easy to find; this repository does not cover that step. Then, from a compute
 adb install -r -g release/PortalCam-0.1.0.apk
 adb shell pm grant au.gordo.portalcam android.permission.CAMERA
 adb shell pm grant au.gordo.portalcam android.permission.RECORD_AUDIO
+adb shell appops set au.gordo.portalcam SYSTEM_ALERT_WINDOW allow
 adb shell am start -n au.gordo.portalcam/.MainActivity
 ```
 
-The `pm grant` lines are optional; the app asks for both permissions the first time it opens.
+The `pm grant` lines are optional; the app asks for both permissions the first time it opens. The `appops` line
+matters. The Portal's Android 10 only lets the app that is on screen use the camera, so PortalCam has to stay on the
+Portal's screen while it is used as a webcam. That permission lets it open its own screen at boot and bring itself
+back if something else covers it. Press Stop in the app when the Portal is wanted for other things.
 
 ## Use
 

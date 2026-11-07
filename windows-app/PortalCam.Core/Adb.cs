@@ -56,6 +56,8 @@ public sealed class Adb
         await RunAsync($"-s {serial} forward tcp:{LocalSpeakerPort} tcp:{remoteSpeaker}");
     }
 
+    /// <summary>Opens the PortalCam screen on the Portal, which starts the camera. A plain service start is not
+    /// enough on Android 10, which only opens the camera for an app that has been on screen.</summary>
     public Task StartPortalAppAsync(string serial) =>
-        RunAsync($"-s {serial} shell am start-foreground-service -n au.gordo.portalcam/.CamService -a au.gordo.portalcam.START");
+        RunAsync($"-s {serial} shell am start -n au.gordo.portalcam/.MainActivity");
 }

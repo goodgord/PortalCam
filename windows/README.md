@@ -31,8 +31,9 @@ script installs all three.
 
 ## On the day
 
-1. Make sure the Portal is on and its camera privacy switch is not covering the lens. The Portal starts
-   streaming on its own. (If it shows another app, that is fine; the stream runs in the background.)
+1. Make sure the Portal is on, its camera privacy switch is not covering the lens, and its screen shows the
+   PortalCam picture. It opens by itself after the Portal starts up. If another app is showing, tap PortalCam; the
+   Portal's camera only works for the app on its screen.
 2. Check the PortalCam tray icon is green. Hover over it to read its state. Grey means it is still looking for the
    Portal.
 3. Join the call.
@@ -51,7 +52,9 @@ Right-click the PortalCam icon:
 ## If something is wrong
 
 - Icon stays grey: the PC and the Portal are on different networks, or the Portal's app is not running. Open the
-  PortalCam app on the Portal and check it says "Streaming". If the PC is on Ethernet and the Portal on a guest
+  PortalCam app on the Portal and check it says "Streaming".
+- Icon is green but the camera shows the waiting message or a dark frame: PortalCam is not the app on the Portal's
+  screen. Tap it on the Portal. If the PC is on Ethernet and the Portal on a guest
   Wi-Fi, move one of them. Or plug the Portal into the PC with a USB cable, tap "Allow" on the Portal when it asks
   about USB debugging, and PortalCam switches to USB on its own.
 - No camera in Teams: quit Teams fully and open it again. Check Windows Settings → Privacy → Camera allows desktop
