@@ -1,0 +1,91 @@
+{
+  "name": "PortalCam",
+  "current_scene": "Portal",
+  "current_program_scene": "Portal",
+  "scene_order": [ { "name": "Portal" } ],
+  "sources": [
+    {
+      "id": "scene",
+      "versioned_id": "scene",
+      "name": "Portal",
+      "enabled": true,
+      "muted": false,
+      "volume": 1.0,
+      "settings": {
+        "custom_size": false,
+        "id_counter": 2,
+        "items": [
+          {
+            "name": "Portal Camera",
+            "id": 1,
+            "visible": true,
+            "locked": false,
+            "align": 5,
+            "pos": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rot": 0.0,
+            "bounds_type": 2,
+            "bounds_align": 0,
+            "bounds": { "x": 1280.0, "y": 720.0 },
+            "crop_left": 0, "crop_top": 0, "crop_right": 0, "crop_bottom": 0
+          },
+          {
+            "name": "Portal Mic",
+            "id": 2,
+            "visible": true,
+            "locked": false,
+            "align": 5,
+            "pos": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rot": 0.0,
+            "bounds_type": 0,
+            "bounds_align": 0,
+            "bounds": { "x": 0.0, "y": 0.0 },
+            "crop_left": 0, "crop_top": 0, "crop_right": 0, "crop_bottom": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "ffmpeg_source",
+      "versioned_id": "ffmpeg_source",
+      "name": "Portal Mic",
+      "enabled": true,
+      "muted": false,
+      "volume": 1.0,
+      "monitoring_type": 1,
+      "settings": {
+        "is_local_file": false,
+        "input": "http://192.168.86.50:8080/audio.wav",
+        "input_format": "wav",
+        "buffering_mb": 0,
+        "reconnect_delay_sec": 1,
+        "restart_on_activate": true,
+        "clear_on_media_end": false,
+        "close_when_inactive": false,
+        "hw_decode": false,
+        "looping": false
+      }
+    },
+    {
+      "id": "ffmpeg_source",
+      "versioned_id": "ffmpeg_source",
+      "name": "Portal Camera",
+      "enabled": true,
+      "muted": true,
+      "volume": 1.0,
+      "settings": {
+        "is_local_file": false,
+        "input": "http://192.168.86.50:8080/stream",
+        "input_format": "mjpeg",
+        "buffering_mb": 0,
+        "reconnect_delay_sec": 1,
+        "restart_on_activate": true,
+        "clear_on_media_end": false,
+        "close_when_inactive": false,
+        "hw_decode": false,
+        "looping": false
+      }
+    }
+  ]
+}

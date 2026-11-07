@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:keepScreenOn="true">
+
+    <ImageView
+        android:id="@+id/preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:contentDescription="Camera preview" />
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:padding="12dp"
+        android:background="#A0000000"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:fontFamily="monospace"
+        android:text="Starting…" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="#A0000000">
+
+        <Button android:id="@+id/btnToggle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stop" android:layout_marginEnd="8dp" />
+        <Button android:id="@+id/btnRotate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Rotate" android:layout_marginEnd="8dp" />
+        <Button android:id="@+id/btnMirror" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mirror: off" android:layout_marginEnd="8dp" />
+        <Button android:id="@+id/btnCamera" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Camera 0" android:layout_marginEnd="8dp" />
+        <Button android:id="@+id/btnSize" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="720p" android:layout_marginEnd="8dp" />
+        <Button android:id="@+id/btnQuality" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Q 75" android:layout_marginEnd="8dp" />
+        <Button android:id="@+id/btnMic" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mic: on" />
+    </LinearLayout>
+</FrameLayout>
