@@ -1,6 +1,10 @@
 # PortalCam
 
-Turns a Facebook Portal (the 10 inch model, Android 10) into a webcam for a Windows PC.
+Turns a Facebook Portal (the 10 inch model, Android 10) into a webcam and microphone for a PC.
+
+Meta ended support for Portal devices, but the hardware has a good wide-angle camera and a four-microphone array.
+This project puts them to use for video calls on a computer that has no webcam. It was written over a weekend for a
+job interview; it is small, has no dependencies beyond the Android framework, and is easy to change.
 
 An Android app runs on the Portal, opens the front camera and microphone, and serves them over HTTP on port 8080:
 video as a Motion JPEG stream, audio as a live WAV stream. On the PC, OBS Studio reads both. It exposes the video to
@@ -17,7 +21,8 @@ Wi-Fi at JPEG quality 75, plus 0.8 Mbit/s of audio.
 
 ## Install on the Portal
 
-The Portal needs developer mode and USB debugging on. Then from a computer with adb:
+The Portal needs USB debugging turned on so that `adb` can reach it. Guides for enabling developer mode on a Portal
+are easy to find; this repository does not cover that step. Then, from a computer with adb:
 
 ```
 adb install -r -g release/PortalCam-0.1.0.apk
@@ -52,7 +57,9 @@ Endpoints on port 8080:
 | `/audio.wav` | The microphone as a live 48 kHz 16-bit mono WAV stream |
 | `/status` | JSON: width, height, fps, clients, mic state, mic level, mic listeners |
 
-PC side: see `windows/README.md`.
+PC side: see `windows/README.md`. The same approach works on a Mac or Linux PC with OBS Studio: OBS Virtual Camera
+is built in on all three, and the microphone goes through a virtual audio device (BlackHole on macOS, a PulseAudio or
+PipeWire null sink on Linux).
 
 ## Build
 
@@ -63,7 +70,7 @@ Needs the Android SDK and JDK 17. `local.properties` must contain `sdk.dir=<path
 ```
 
 The release build is signed with the debug key on purpose, so it installs with plain `adb install` and needs no
-keystore. Do not publish it anywhere that matters.
+keystore. It is meant for sideloading onto your own device, not for an app store.
 
 ## How the picture gets from the camera to the PC
 
@@ -78,3 +85,15 @@ keystore. Do not publish it anywhere that matters.
 
 The default rotation comes from the camera's sensor orientation (270 degrees on this Portal) and the display rotation,
 following the Camera2 formula for a front camera. Standing the Portal the other way up needs two presses of Rotate.
+
+## Known limits
+
+- Video and audio are separate streams with no shared clock. OBS plays them with similar delay, and the Sync Offset
+  on the audio source corrects any drift you notice.
+- The Portal's own assistant software holds camera 1 most of the time. Camera 0 works; the Camera button switches.
+- The Windows guide was written from OBS and VB-Cable documentation and has not yet been run through on a Windows PC.
+  Corrections are welcome.
+
+## Licence
+
+MIT. See `LICENSE`.
